@@ -12,9 +12,9 @@
  * sysmanaged the sweep's SUSPEND and RESUME are all that happen, so re-opening the
  * clock gate and restarting the counter is enough. In dpd the CORE domain is power
  * gated: the whole register block comes back at its reset value, the SYSCON clock
- * gate with it, and nothing re-runs driver init -- so RESUME has to rebuild the
- * armed alarm from the image the suspend kept. dpd is the only layer that can catch
- * a driver with no restore path.
+ * gate with it, and nothing re-runs driver init -- so TURN_ON has to rebuild the
+ * armed alarm from the image the suspend kept and RESUME has to restart it. dpd is
+ * the only layer that can catch a driver with no restore path.
  *
  * What is asserted after the transition is deliberately behavioural as well as
  * register-level: that the counter counts and the alarm the consumer armed still

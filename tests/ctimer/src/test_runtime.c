@@ -15,10 +15,10 @@
  *
  * What this layer is really here to catch is the boot state. pm_device_driver_init()
  * runs TURN_ON and then stops short of RESUME when runtime PM is about to own the
- * device, so a driver that brings the block up in TURN_ON boots it clocked while the
- * core records it as SUSPENDED -- green everywhere else, and wrong. This driver
- * brings the block up in RESUME for exactly that reason, and the first test below is
- * the check.
+ * device, so a driver that leaves the block clocked in TURN_ON boots it running while
+ * the core records it as SUSPENDED -- green everywhere else, and wrong. This driver's
+ * TURN_ON configures the block and gates it again before returning, and the first
+ * test below is the check.
  *
  * Two tests. The first has to run first: it reads the state the device booted in,
  * and the second leaves it suspended.

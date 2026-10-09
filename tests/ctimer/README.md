@@ -34,11 +34,13 @@ back perfectly while the clock mux did not would read as restored and still not 
 
 ## Which action brings the block up
 
-`TURN_ON` does nothing; `RESUME` configures. That is deliberate and
-`test_device_resume_rebuilds_the_register_block` asserts it rather than assuming it.
+`TURN_ON` rebuilds the register block and `RESUME` restarts the counter, and
+`test_device_turn_on_rebuilds_the_register_block` asserts that split rather than
+assuming it. `TURN_ON` borrows the function clock to write those registers and gates
+it again before returning, which is the part that matters here:
 `pm_device_driver_init()` runs `TURN_ON` and then stops short of `RESUME` when runtime
-PM is about to own the device, so a driver that brings the block up in `TURN_ON` boots
-it clocked while the core records it as `SUSPENDED` — the same shape as the
+PM is about to own the device, so a driver that left the block clocked would boot it
+running while the core records it as `SUSPENDED` — the same shape as the
 `lpcmp-boots-enabled-while-suspended` finding. `test_runtime_boots_without_a_consumer`
 is the check that it does not happen here.
 
@@ -52,20 +54,24 @@ the counter behind the consumer's back. Releasing it on suspend matters — with
 one `counter_start()` would block Deep Sleep for the rest of the run even with no
 consumer holding a reference. `src/test_system.c` asserts both directions.
 
-Which states to declare is a board question, not an SoC one, which is why
-`constraints.overlay` carries the list rather than the SoC dtsi: per MCX Nx4x RM Rev.
-6_RC2 Table 336 CTIMER0 *can* keep counting in Deep Sleep and Power Down, but only on
-a functional clock that survives them, and every board here attaches a PLL that does
-not.
+Which states to declare depends on the clock the board attached to the counter. The
+MCX Nx4x SoC dtsi declares the conservative list for all five of its instances;
+`constraints.overlay` supplies it on the MCXN23x and MCXA targets, whose SoC dtsi does
+not. Per MCX Nx4x RM Rev. 6_RC2 Table 336 CTIMER0 *can* keep counting in Deep Sleep
+and Power Down, but only on a functional clock that survives them, and every board
+here attaches a PLL that does not.
 
 ## Expected per layer
 
-Verified on `frdm_mcxn947/mcxn947/cpu0`, station 1166.
+Measured on `frdm_mcxn947/mcxn947/cpu0`, station 1166, against an earlier shape of the
+driver that configured the block from `RESUME` rather than `TURN_ON`, and before the
+SoC dtsi put the CTIMERs on the CORE domain. The current driver is build-verified
+only, so every row below has to be re-run.
 
-| Layer | Verdict |
+| Layer | Verdict (stale) |
 | --- | --- |
 | `baseline` | PASS — the counter counts and an armed alarm fires |
-| `device` | PASS — `SUSPEND` gates the clock, `RESUME` restores the armed alarm |
+| `device` | PASS — `SUSPEND` gates the clock, the round trip restores the alarm |
 | `runtime` | blocked — see below |
 | `system` | PASS — the constraint tracks `TCR[CEN]`, including across a runtime suspend |
 | `sysmanaged` | PASS — the sweep's `SUSPEND`/`RESUME` round trip |
@@ -90,4 +96,5 @@ backend to reach. `pd-soc-state-change-null-deref` in
 
 The layer's central claim is still observable, in `system`, which selects `CONFIG_PM`
 as well and so gets past that fault: `ctimer@c000 at boot: suspended` with `gate=0`.
-That is the whole point of doing the bring-up in `RESUME` rather than `TURN_ON`.
+That is the whole point of `TURN_ON` handing the function clock back before it
+returns.

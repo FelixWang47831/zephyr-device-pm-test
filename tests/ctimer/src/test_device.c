@@ -13,11 +13,13 @@
  * block is clobbered by hand so that the restore has something to put back. What a
  * real power cycle does is asked in src/test_lowpower.c under the dpd layer.
  *
- * Note which action is expected to bring the block up. This driver does nothing in
- * TURN_ON and configures from RESUME, so that an instance which boots SUSPENDED
- * under runtime PM boots with its clock genuinely gated instead of running behind a
- * PM state that says otherwise. The second test asserts that split rather than
- * assuming it.
+ * Note which action is expected to bring the block up. TURN_ON rebuilds the register
+ * block, borrowing the function clock and handing it back before it returns, so an
+ * instance which boots SUSPENDED under runtime PM boots configured but genuinely
+ * gated. RESUME re-opens the gate and restarts a counter that was running. The second
+ * test asserts that split as far as it is observable: a CTIMER register answers only
+ * while the block is clocked, so the image cannot be read between TURN_ON and RESUME,
+ * and what is checked there is that TURN_ON left the gate closed.
  */
 
 #include <zephyr/pm/device.h>
@@ -98,7 +100,7 @@ ZTEST(ctimer_pm, test_device_suspend_resume)
 	}
 }
 
-ZTEST(ctimer_pm, test_device_resume_rebuilds_the_register_block)
+ZTEST(ctimer_pm, test_device_turn_on_rebuilds_the_register_block)
 {
 	CTIMER_FOREACH_CASE(c) {
 		struct ctimer_image armed;
@@ -154,16 +156,16 @@ ZTEST(ctimer_pm, test_device_resume_rebuilds_the_register_block)
 		/*
 		 * TURN_ON returns with the core about to record the device as suspended,
 		 * so a block left clocked would be a block running behind a PM state that
-		 * says it is not. Bringing it back is RESUME's job, and it has to bring
-		 * back the run-time image and not just a devicetree configuration that is
-		 * indistinguishable from reset.
+		 * says it is not. The image it rebuilds has to be the run-time one and
+		 * not just a devicetree configuration that is indistinguishable from
+		 * reset, which is what the clobber above makes answerable.
 		 */
 		zassert_false(gate_after_turn_on, "%s: TURN_ON opened the clock gate",
 			      c->dev->name);
 		zassert_true(ctimer_gate_is_open(c), "%s: RESUME left the clock gate closed",
 			     c->dev->name);
 		zassert_true(ctimer_image_equal(&after_resume, &armed),
-			     "%s: RESUME left TCR=0x%08x MCR=0x%08x MR=0x%08x, want "
+			     "%s: the round trip left TCR=0x%08x MCR=0x%08x MR=0x%08x, want "
 			     "0x%08x/0x%08x/0x%08x", c->dev->name, after_resume.tcr,
 			     after_resume.mcr, after_resume.mr, armed.tcr, armed.mcr, armed.mr);
 		zassert_true(ctimer_alarm_wait(c, 500U),
