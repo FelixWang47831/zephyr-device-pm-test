@@ -44,9 +44,10 @@ tests:
     required_snippets:
       - pm-runtime
 
-  # The MCX Nx4x SoC dtsi declares the state list itself; the MCXN23x and MCXA targets
-  # have no such declaration, so the overlay supplies it there. Stacked with
-  # EXTRA_DTC_OVERLAY_FILE so anything the board target applies still applies.
+  # Every target's SoC dtsi declares the state list itself, so the overlay restates
+  # it; it is kept so this layer does not depend on those dtsi commits being in the
+  # tree. Stacked with EXTRA_DTC_OVERLAY_FILE so anything the board target applies
+  # still applies.
   drivers.pm.ctimer.system:
     required_snippets:
       - pm-system

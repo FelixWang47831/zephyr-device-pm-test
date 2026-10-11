@@ -54,47 +54,50 @@ the counter behind the consumer's back. Releasing it on suspend matters — with
 one `counter_start()` would block Deep Sleep for the rest of the run even with no
 consumer holding a reference. `src/test_system.c` asserts both directions.
 
-Which states to declare depends on the clock the board attached to the counter. The
-MCX Nx4x SoC dtsi declares the conservative list for all five of its instances;
-`constraints.overlay` supplies it on the MCXN23x and MCXA targets, whose SoC dtsi does
-not. Per MCX Nx4x RM Rev. 6_RC2 Table 336 CTIMER0 *can* keep counting in Deep Sleep
-and Power Down, but only on a functional clock that survives them, and every board
-here attaches a PLL that does not.
+Which states to declare depends on the clock the board attached to the counter. Every
+SoC dtsi behind the targets in `platform_allow` declares the conservative list, for
+every instance; `constraints.overlay` restates it for the `system` layer so that layer
+does not depend on those dtsi commits being in the tree. Per MCX Nx4x RM Rev. 6_RC2
+Table 336 CTIMER0 *can* keep counting in Deep Sleep and Power Down, but only on a
+functional clock that survives them, and every board here attaches a PLL that does not.
 
 ## Expected per layer
 
-Measured on `frdm_mcxn947/mcxn947/cpu0`, station 1166, against an earlier shape of the
-driver that configured the block from `RESUME` rather than `TURN_ON`, and before the
-SoC dtsi put the CTIMERs on the CORE domain. The current driver is build-verified
-only, so every row below has to be re-run.
+Measured on Dapeng job 2325364, all 11 board targets, at zephyr `196864afa42` and
+harness `482deab` — [../../results/20261010-ctimer-dapeng.json](../../results/20261010-ctimer-dapeng.json).
+66 of 66 configurations built. Six board models had no online station in the run token
+pool and are recorded `built`, which is infrastructure and not a verdict.
 
-| Layer | Verdict (stale) |
-| --- | --- |
-| `baseline` | PASS — the counter counts and an armed alarm fires |
-| `device` | PASS — `SUSPEND` gates the clock, the round trip restores the alarm |
-| `runtime` | blocked — see below |
-| `system` | PASS — the constraint tracks `TCR[CEN]`, including across a runtime suspend |
-| `sysmanaged` | PASS — the sweep's `SUSPEND`/`RESUME` round trip |
-| `dpd` | PASS — the armed alarm comes back from a real Deep Power Down |
+| Layer | a577 | n236 | n947 | a266 | a153 |
+| --- | --- | --- | --- | --- | --- |
+| `baseline` | PASS | blocked | blocked | blocked | blocked |
+| `device` | fail | fail | blocked | blocked | blocked |
+| `runtime` | PASS | PASS | PASS | PASS | blocked |
+| `system` | fail | fail | fail | fail | fail |
+| `sysmanaged` | fail | PASS | PASS | fail | blocked |
+| `dpd` | fail | fail | fail | fail | blocked |
 
-`dpd` was the layer whose outcome could not be predicted from the source. The CTIMER
-functional clock select and divider (`CTIMER0CLKSEL`, `CTIMER0CLKDIV`) live in SYSCON
-and are programmed by board init, not by this driver, so a register image that came
-back perfectly while the clock mux did not would have read as restored and still not
-counted. It does count: after the transition the gate is re-opened, `MR[0]` and `MCR`
-are bit-identical, and the alarm the consumer armed fires.
+The 13 failures are three things, and the table has to be re-run now that all three
+have been answered.
 
-`runtime` never reaches its own claims on this board, and not because of this driver.
-The MCXN SoC dtsi enables a `core-domain` node of compatible
-`power-domain-soc-state-change`, and that driver's `pd_pm_action()` dereferences
-`pm_state_next_get()` unconditionally. In a build with `CONFIG_PM_DEVICE_RUNTIME` but
-no `CONFIG_PM` — which is exactly this layer — that helper is a stub returning `NULL`,
-so `pm_device_runtime_auto_enable()` faults during device init, before the console
-UART is initialised: the board produces no output at all and the fault message has no
-backend to reach. `pd-soc-state-change-null-deref` in
+`system` failed on all four boards that ran it, and the test was right: the driver
+held its policy lock across a suspend, so `while_suspended` was not zero.
+`ctimer-power-lock-held-while-suspended` and
+`ctimer-power-lock-leaks-after-turn-off` in
 [../../docs/findings.md](../../docs/findings.md).
 
-The layer's central claim is still observable, in `system`, which selects `CONFIG_PM`
-as well and so gets past that fault: `ctimer@c000 at boot: suspended` with `gate=0`.
-That is the whole point of `TURN_ON` handing the function clock back before it
-returns.
+`device` and `dpd` failed because the tests were wrong, not the driver. They demanded
+that a power cycle hand back the armed alarm the consumer had set, which is the
+consumer's to re-arm — see `src/ctimer.h` for why the counter API puts it there, and
+`../lpdac/src/test_device.c` for the same round trip asserted correctly. Both have been
+rewritten to assert the contract the driver implements: the round trip owes a usable
+device, and a freshly armed alarm firing is what proves the restore path ran.
+
+`sysmanaged` on a577 and a266, and the `blocked` rows, are the board farm rather than
+the driver: a hang after the forced transition on boards whose Dapeng station does not
+power-cycle between layers, and timeouts or a download error with no ztest output at
+all. These separate only by re-running.
+
+`runtime` passing on all four boards that reached it is new.
+`pd-soc-state-change-null-deref` blocked this layer in the previous record and no
+longer does.
