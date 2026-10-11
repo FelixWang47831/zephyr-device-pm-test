@@ -8,21 +8,20 @@
  * @brief The sysmanaged and dpd layers: the device sweep across one transition.
  *
  * One file for two layers, because the sequence is identical and only the state
- * being entered differs -- and that difference is what separates the two claims. In
- * sysmanaged the sweep's SUSPEND and RESUME are all that happen, so the block keeps
- * its power: re-opening the clock gate hands back the alarm the consumer armed, and
- * it fires on its own. In dpd the CORE domain is power gated: the whole register
- * block comes back at its reset value, the SYSCON clock gate with it, and nothing
- * re-runs driver init -- so TURN_ON has to rebuild the block from the devicetree and
- * re-connect the interrupt, while the run the consumer had is gone and arming again
- * is theirs. dpd is the only layer that can catch a driver with no restore path.
+ * being entered differs. In sysmanaged the sweep's SUSPEND and RESUME are all that
+ * happen, so the block keeps its power: re-opening the clock gate hands back the
+ * alarm the consumer armed, and it fires on its own. In dpd the CORE domain is power
+ * gated: the whole register block comes back at its reset value, the SYSCON clock
+ * gate with it, and nothing re-runs driver init -- so TURN_ON has to rebuild the
+ * block from the devicetree and re-connect the interrupt, while the run the consumer
+ * had is gone and arming again is theirs.
  *
- * What is asserted after the transition is deliberately behavioural as well as
- * register-level: that the counter counts and that an alarm fires -- the one the
- * consumer armed where power was kept, a freshly armed one where it was not. A
- * CTIMER's functional clock is selected by the board rather than by this driver, so
- * a register image that came back perfectly while the clock mux did not would look
- * restored and still not count.
+ * What is asserted after the transition is behavioural as well as register-level:
+ * that the counter counts and that an alarm fires -- the one the consumer armed
+ * where power was kept, a freshly armed one where it was not. A CTIMER's functional
+ * clock is selected by the board rather than by this driver, so a register image
+ * that came back perfectly while the clock mux did not would look restored and still
+ * not count.
  */
 
 #include <zephyr/pm/device.h>
@@ -90,8 +89,7 @@ ZTEST(ctimer_pm, test_sweep_across_transition)
 #if defined(CONFIG_PM_TEST_LAYER_DPD)
 			zassert_false(ctimer_image_equal(&after, &armed),
 				      "%s: the armed alarm came back across %s, so the block "
-				      "kept its power and this layer is not testing what it "
-				      "claims", c->dev->name, PM_TEST_TRANSITION_NAME);
+				      "kept its power", c->dev->name, PM_TEST_TRANSITION_NAME);
 #else
 			zassert_true(ctimer_image_equal(&after, &armed),
 				     "%s: the armed alarm did not survive the transition: "
@@ -104,10 +102,8 @@ ZTEST(ctimer_pm, test_sweep_across_transition)
 #if defined(CONFIG_PM_TEST_LAYER_DPD)
 		/*
 		 * Power was cut, so the counter is back at reset and nothing is armed.
-		 * What has to hold is that the block works again: starting and arming
-		 * from scratch cannot succeed unless TURN_ON rebuilt the block and
-		 * re-connected the interrupt, which is the restore path this layer exists
-		 * to check.
+		 * Starting and arming from scratch cannot succeed unless TURN_ON rebuilt
+		 * the block and re-connected the interrupt.
 		 */
 		zassert_false(ctimer_running(c),
 			      "%s: the counter is running after %s without being started",

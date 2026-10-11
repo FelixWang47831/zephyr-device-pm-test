@@ -336,7 +336,7 @@ void ctimer_report_hw(const struct ctimer_case *c, const char *when)
 	}
 
 	if (!ctimer_gate_is_open(c)) {
-		/* Deliberately no register read: an unclocked block does not answer. */
+		/* No register read: an unclocked block does not answer. */
 		TC_PRINT("hw(%s, %s) gate=0, registers not read\n", when, c->dev->name);
 		return;
 	}

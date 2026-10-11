@@ -8,13 +8,11 @@
  * @brief The control: this case really does drive the CTIMER.
  *
  * Compiled into every layer. If this fails, no verdict from the layer under test
- * means anything -- which is the whole reason the baseline layer exists as a layer.
+ * means anything.
  *
- * Two claims, and the second is what makes the rest of the case possible: that the
- * counter counts, and that an armed alarm leaves a register image distinguishable
- * from a reset block. Every later layer tells "restored" from "came back from
- * reset" by comparing against that image, so a case where it is empty proves
- * nothing anywhere.
+ * Two claims: that the counter counts, and that an armed alarm leaves a register
+ * image distinguishable from a reset block. Every later layer tells "restored" from
+ * "came back from reset" by comparing against that image.
  */
 
 #include <zephyr/pm/device_runtime.h>

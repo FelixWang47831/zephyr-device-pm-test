@@ -13,12 +13,11 @@
  * could hang on, so wrapping each API call in its own get/put would stop the
  * counter the moment the call returned. The reference is the consumer's.
  *
- * What this layer is really here to catch is the boot state. pm_device_driver_init()
- * runs TURN_ON and then stops short of RESUME when runtime PM is about to own the
- * device, so a driver that leaves the block clocked in TURN_ON boots it running while
- * the core records it as SUSPENDED -- green everywhere else, and wrong. This driver's
- * TURN_ON configures the block and gates it again before returning, and the first
- * test below is the check.
+ * What this layer catches is the boot state. pm_device_driver_init() runs TURN_ON and
+ * then stops short of RESUME when runtime PM is about to own the device, so a driver
+ * that leaves the block clocked in TURN_ON boots it running while the core records it
+ * as SUSPENDED. This driver's TURN_ON configures the block and gates it again before
+ * returning, and the first test below is the check.
  *
  * Two tests. The first has to run first: it reads the state the device booted in,
  * and the second leaves it suspended.
@@ -38,8 +37,7 @@ ZTEST(ctimer_pm, test_runtime_boots_without_a_consumer)
 		enum pm_device_state state;
 
 		zassert_true(pm_device_runtime_is_enabled(c->dev),
-			     "%s: runtime PM is not enabled, so this layer tests nothing",
-			     c->dev->name);
+			     "%s: runtime PM is not enabled on this device", c->dev->name);
 
 		/*
 		 * Two boot states are legal. Without a power domain the device lands in

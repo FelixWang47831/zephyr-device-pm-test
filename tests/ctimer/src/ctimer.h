@@ -7,37 +7,27 @@
  * @file
  * @brief What every layer of the CTIMER case needs from the hardware.
  *
- * Two things are observed, because neither alone is enough.
+ * Three things are observed.
  *
- * The first is the block's AHB clock gate, read out of the clock controller the
- * way tests/port reads it -- not out of a CTIMER register, because a CTIMER
- * register only answers while the block is clocked, and whether it is clocked is
- * the question. Gating that clock is the whole of what SUSPEND does for power, so
- * without it there is nothing to see: a stopped counter and a suspended one look
- * identical from the counter API.
+ * The block's AHB clock gate, read out of the clock controller rather than out of
+ * a CTIMER register: a CTIMER register only answers while the block is clocked,
+ * and whether it is clocked is the question. Gating that clock is the whole of
+ * what SUSPEND does for power, and from the counter API alone a stopped counter
+ * and a suspended one look identical.
  *
- * The second is the register image of an armed alarm: MR[0] holds the match value
- * and MCR its interrupt enable, and nothing else in the block carries them. That
- * makes it the observable for a suspend, which keeps the block powered and so has
- * to hand the armed alarm back untouched.
+ * The register image of an armed alarm: MR[0] holds the match value and MCR its
+ * interrupt enable, and nothing else in the block carries them. A suspend keeps
+ * the block powered, so the image it hands back has to be the one it was given.
  *
- * It is deliberately not the observable for a power cycle. The counter API gives
- * the consumer stop() and cancel_alarm(), and a count value that no restore can
- * make meaningful again, so re-arming after power was lost belongs to the consumer
- * and a driver that did it for them would be fighting its own API. Nor is the
- * devicetree image an alternative: on every board here prescale, mode and input are
- * all 0, which is also what a reset leaves, so comparing the configuration against
- * reset would compare zero against zero and pass without the driver rebuilding
- * anything.
+ * A counter that advances, which is the control: it is what makes "the gate is
+ * open" mean the peripheral works rather than that a bit is set.
  *
- * What is asserted across a power cycle is therefore behavioural: an alarm armed
- * fresh after the round trip has to fire. That cannot pass without the driver
- * having re-run init and re-connected the interrupt, so it catches a missing
- * restore path the way the register image would have, without asking the driver for
- * something the API says is not its job.
- *
- * A counter that advances is the third thing, and it is the control: it is what
- * makes "the gate is open" mean the peripheral works rather than that a bit is set.
+ * Across a power cycle the assertion is behavioural instead: an alarm armed fresh
+ * after the round trip has to fire. Re-arming is the consumer's, because the
+ * counter API gives it stop() and cancel_alarm() and a count value that no
+ * restore can make meaningful again. What the driver owes is a device that can be
+ * armed, and it cannot be unless TURN_ON re-ran init and re-connected the
+ * interrupt.
  */
 
 #ifndef CTIMER_PM_H_

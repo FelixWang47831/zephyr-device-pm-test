@@ -6,21 +6,18 @@
  * counting. Stacked on top of whatever the board target already applies, for the
  * system layer only (via EXTRA_DTC_OVERLAY_FILE).
  *
- * Every board target in platform_allow now gets this list from its SoC dtsi, which
- * also covers every CTIMER instance rather than just ctimer0, so here it restates
- * what is already there. It is kept because the system layer should not depend on
- * those dtsi commits being in the tree: on a checkout without them this is what
- * supplies the list, and the layer still measures what it claims to.
+ * Every board target in platform_allow gets this list from its SoC dtsi, for every
+ * CTIMER instance rather than just ctimer0, so this restates what is already there.
+ * It is kept so the system layer does not depend on those dtsi commits being in the
+ * tree: on a checkout without them, this is what supplies the list.
  *
- * Why all three states. Per MCX Nx4x RM Rev. 6_RC2 Table 336, CTIMER0 is "LP/Static"
- * in both Deep Sleep and Power Down and CTIMER1-3 are "LP/Static" in Deep Sleep --
- * that is, the block *can* keep counting in those states, but only on a functional
- * clock that survives them. The MCXN and MCXA boards this case runs on all attach
- * PLL0 (or the equivalent system PLL) to their CTIMER, and that PLL is off in Deep
- * Sleep, so on these boards every one of the three states does stop the counter.
+ * All three states are listed because every MCXN and MCXA board this case runs on
+ * attaches PLL0, or the equivalent system PLL, to its CTIMER and that PLL is off in
+ * all three. Per MCX Nx4x RM Rev. 6_RC2 Table 336 the block itself is "LP/Static" in
+ * Deep Sleep and Power Down, so what stops the counter there is the clock and not
+ * the block.
  *
- * Deep Power Down additionally gates the CORE domain and resets the registers, which
- * is the stronger loss the dpd layer is about.
+ * Deep Power Down additionally gates the CORE domain and resets the registers.
  */
 
 &ctimer0 {

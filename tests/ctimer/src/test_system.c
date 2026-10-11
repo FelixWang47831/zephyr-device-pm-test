@@ -11,9 +11,8 @@
  * zephyr,disabling-power-states (see constraints.overlay), and the driver holds a
  * policy constraint against exactly those states for as long as the counter is
  * actually counting. The window is not one API call -- a counter has no completion
- * event -- so the invariant the driver keeps is narrower and more useful than
- * "between start and stop": the lock is held while TCR[CEN] is set, which means a
- * runtime-PM suspend that stops the counter hands the lock back and a resume that
+ * event -- so the constraint follows the counter and the device state together: a
+ * runtime-PM suspend that stops the counter hands the lock back, and a resume that
  * restarts it takes it again. Without that, one counter_start() would block those
  * states for the rest of the run even with no consumer left holding a reference.
  *
@@ -46,9 +45,8 @@ static unsigned int locked_states(void)
 /*
  * How many power states this node declares as disabling. States that are listed but
  * disabled in the devicetree are dropped from the generated table, so this can
- * legitimately be smaller than the list in constraints.overlay -- but a zero means
- * the overlay never reached the node, and every comparison below would then pass
- * while proving nothing.
+ * legitimately be smaller than the list in constraints.overlay. A zero means the
+ * overlay never reached the node, which is why the tests below guard on it.
  */
 static unsigned int declared_states(const struct device *dev)
 {
@@ -173,9 +171,8 @@ ZTEST(ctimer_pm, test_system_constraint_follows_the_counter)
 
 		/*
 		 * A resume restarts the counter the consumer was running, so it has to
-		 * take the protection back. A driver that only took the lock in start()
-		 * would come back counting with nothing stopping the policy from entering
-		 * a state that stops the clock under it.
+		 * take the protection back: without it the counter comes back counting
+		 * while the policy is free to enter a state that stops its clock.
 		 */
 		zassert_ok(pm_device_runtime_get(c->dev), "%s: second runtime_get rejected",
 			   c->dev->name);
