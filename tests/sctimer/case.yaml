@@ -1,0 +1,12 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: Apache-2.0
+#
+# What this case covers, for the Device PM report. See docs/authoring-a-case.md.
+
+case: sctimer
+ip: SCTimer
+compatibles:
+  - nxp,sctimer-pwm
+drivers:
+  - drivers/pwm/pwm_mcux_sctimer.c
+  - drivers/clock_control/clock_control_mcux_syscon.c

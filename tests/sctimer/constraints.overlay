@@ -1,0 +1,23 @@
+/*
+ * Copyright 2026 NXP
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * System-PM constraint layer: mark which SoC power states stop this SCTimer
+ * counting. Stacked on top of whatever the board target already applies, for the
+ * system layer only (via EXTRA_DTC_OVERLAY_FILE).
+ *
+ * The board target in platform_allow gets this list from nxp_mcxnx4x_common.dtsi, so
+ * this restates what is already there. It is kept so the system layer does not depend
+ * on that dtsi commit being in the tree: on a checkout without it, this is what
+ * supplies the list.
+ *
+ * All three states are listed, and for the SCTimer the reason is the block and not
+ * only the clock. Per MCX Nx4x RM Rev. 6_RC2 section 35.4 Table 336 the SCT is
+ * "Static" in Deep Sleep and Power Down -- it has no asynchronous functional clock to
+ * keep it counting there, so no board can wire around it -- and "Off" in Deep Power
+ * Down, where the CORE domain is gated and the registers are reset.
+ */
+
+&sc_timer {
+	zephyr,disabling-power-states = <&deepsleep &powerdown &deeppowerdown>;
+};

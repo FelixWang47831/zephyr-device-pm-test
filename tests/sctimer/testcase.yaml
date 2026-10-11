@@ -1,0 +1,55 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: Apache-2.0
+#
+# One scenario per layer, and the layer is named once, as a snippet.
+#
+# There is no boards/ directory: nothing here looks at the pad, so no external wiring
+# is needed and every claim is read out of the SCT register block and the SYSCON clock
+# gate.
+#
+# One board target, because frdm_mcxn947 is the only one that enables sc_timer and
+# attaches a pinctrl group to it. The MCX N EVK targets (mcx_n9xx_evk, mcx_n5xx_evk)
+# are excluded deliberately: their board devicetrees never reference &sc_timer, so the
+# node stays disabled and src/sctimer.h would stop the build with an #error. MCX A has
+# no SCTimer peripheral at all.
+
+common:
+  tags:
+    - pm
+    - pwm
+    - drivers
+  harness: ztest
+  platform_allow:
+    # MCXN
+    - frdm_mcxn947/mcxn947/cpu0
+    - frdm_mcxn947/mcxn947/cpu0/qspi
+
+tests:
+  # The control. No snippet, so lib/pm_test's layer choice falls back to baseline.
+  drivers.pm.sctimer.baseline: {}
+
+  drivers.pm.sctimer.device:
+    required_snippets:
+      - pm-device
+
+  drivers.pm.sctimer.runtime:
+    required_snippets:
+      - pm-runtime
+
+  # The board target's SoC dtsi declares the state list itself, so the overlay
+  # restates it; it is kept so this layer does not depend on that dtsi commit being in
+  # the tree. Stacked with EXTRA_DTC_OVERLAY_FILE so anything the board target applies
+  # still applies.
+  drivers.pm.sctimer.system:
+    required_snippets:
+      - pm-system
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=constraints.overlay
+
+  drivers.pm.sctimer.sysmanaged:
+    required_snippets:
+      - pm-sysmanaged
+
+  drivers.pm.sctimer.dpd:
+    required_snippets:
+      - pm-dpd

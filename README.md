@@ -14,6 +14,7 @@ transition behaves. A failing layer is a finding, not a broken harness.
 | [tests/lpcmp](tests/lpcmp) | LPCMP | `drivers/comparator/comparator_nxp_lpcmp.c` |
 | [tests/lpdac](tests/lpdac) | LPDAC | `drivers/dac/dac_mcux_lpdac.c` |
 | [tests/port](tests/port) | PORT pin-mux | `drivers/pinctrl/pinctrl_nxp_port.c` |
+| [tests/sctimer](tests/sctimer) | SCTimer | `drivers/pwm/pwm_mcux_sctimer.c` |
 | [tests/vref](tests/vref) | VREF | `drivers/regulator/regulator_nxp_vref.c` |
 
 What it has found so far: [docs/findings.md](docs/findings.md).
