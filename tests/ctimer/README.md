@@ -63,41 +63,49 @@ functional clock that survives them, and every board here attaches a PLL that do
 
 ## Expected per layer
 
-Measured on Dapeng job 2325364, all 11 board targets, at zephyr `196864afa42` and
-harness `482deab` — [../../results/20261010-ctimer-dapeng.json](../../results/20261010-ctimer-dapeng.json).
+Measured on Dapeng job 2325402, all 11 board targets, at zephyr `33915515a6e` and
+harness `81f5137` — [../../results/20261011-ctimer-dapeng.json](../../results/20261011-ctimer-dapeng.json).
 66 of 66 configurations built. Six board models had no online station in the run token
 pool and are recorded `built`, which is infrastructure and not a verdict.
 
-| Layer | a577 | n236 | n947 | a266 | a153 |
+| Layer | n236 | n947 | a577 | a266 | a153 |
 | --- | --- | --- | --- | --- | --- |
-| `baseline` | PASS | blocked | blocked | blocked | blocked |
-| `device` | fail | fail | blocked | blocked | blocked |
-| `runtime` | PASS | PASS | PASS | PASS | blocked |
-| `system` | fail | fail | fail | fail | fail |
-| `sysmanaged` | fail | PASS | PASS | fail | blocked |
-| `dpd` | fail | fail | fail | fail | blocked |
+| `baseline` | PASS | PASS | blocked | PASS | PASS |
+| `device` | PASS | blocked | PASS | blocked | PASS |
+| `runtime` | PASS | PASS | PASS | PASS | fail |
+| `system` | PASS | PASS | PASS | PASS | fail |
+| `sysmanaged` | PASS | PASS | fail | fail | fail |
+| `dpd` | PASS | PASS | fail | fail | fail |
 
-The 13 failures are three things, and the table has to be re-run now that all three
-have been answered.
+No assertion failed anywhere in this job. Every row that is not a PASS is a hang or a
+station event, which is what separates this record from the previous one: there the
+`system` row was a real defect and the `device` and `dpd` rows were tests asserting a
+contract the counter API does not give the driver.
 
-`system` failed on all four boards that ran it, and the test was right: the driver
-held its policy lock across a suspend, so `while_suspended` was not zero.
-`ctimer-power-lock-held-while-suspended` and
+n236 carries all six layers. `system` passes on every board that reached it, which is
+what `ctimer-power-lock-held-while-suspended` and
 `ctimer-power-lock-leaks-after-turn-off` in
-[../../docs/findings.md](../../docs/findings.md).
+[../../docs/findings.md](../../docs/findings.md) were about: the driver now drops its
+policy lock on suspend and keeps the held-ness in its own flag rather than reading a
+bit a turn-off resets. `device` and `dpd` pass on every board that reached them, against
+the rewritten assertion — a round trip owes a usable device, and a freshly armed alarm
+firing is what proves the restore path ran.
 
-`device` and `dpd` failed because the tests were wrong, not the driver. They demanded
-that a power cycle hand back the armed alarm the consumer had set, which is the
-consumer's to re-arm — see `src/ctimer.h` for why the counter API puts it there, and
-`../lpdac/src/test_device.c` for the same round trip asserted correctly. Both have been
-rewritten to assert the contract the driver implements: the round trip owes a usable
-device, and a freshly armed alarm firing is what proves the restore path ran.
+The remaining rows, none of which is the driver:
 
-`sysmanaged` on a577 and a266, and the `blocked` rows, are the board farm rather than
-the driver: a hang after the forced transition on boards whose Dapeng station does not
-power-cycle between layers, and timeouts or a download error with no ztest output at
-all. These separate only by re-running.
+`sysmanaged` and `dpd` on the three MCXA boards hang at the forced transition, the log
+ending on `forcing one Deep Sleep transition` or `forcing one Deep Power Down
+transition`. That is `mcxa-suspend-to-idle-never-wakes`, an environment defect this
+case inherits.
 
-`runtime` passing on all four boards that reached it is new.
-`pd-soc-state-change-null-deref` blocked this layer in the previous record and no
-longer does.
+`runtime` and `system` on a153 stop after the layer banner, before the suite setup
+prints its first line, with every case blocked. Those two layers are the only ones that
+boot every device `SUSPENDED` through `PM_DEVICE_RUNTIME_DEFAULT_ENABLE`, and `device`,
+which does not, passes on the same board. Not reproduced locally — a153 is not on hand.
+
+`device` on n947 is a station problem, not a board one: the handler log ends on
+`PROJECT EXECUTION SUCCESSFUL` and twister then died with `UnicodeEncodeError` printing
+its summary tree to a cp1252 console. `baseline` on a577 and `device` on a266 are
+download errors — the image never reached the board. Note that a station leaves the
+previous task's `handler.log` at the same path, so for a download error that file
+reports somebody else's run and must not be read as a verdict.

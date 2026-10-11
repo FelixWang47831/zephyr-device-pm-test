@@ -1,0 +1,140 @@
+{
+  "run": "20261011-ctimer-dapeng",
+  "date": "2026-10-11",
+  "case": "ctimer",
+  "where": "dapeng",
+  "zephyr": "33915515a6e",
+  "harness": "81f5137",
+  "targets": {
+    "frdm_mcxa153": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "pass",
+        "device": "pass",
+        "runtime": "fail",
+        "system": "fail",
+        "sysmanaged": "fail",
+        "dpd": "fail"
+      }
+    },
+    "frdm_mcxa156": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "built",
+        "device": "built",
+        "runtime": "built",
+        "system": "built",
+        "sysmanaged": "built",
+        "dpd": "built"
+      },
+      "note": "no online station in the run token pool"
+    },
+    "frdm_mcxa266": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "pass",
+        "device": "blocked",
+        "runtime": "pass",
+        "system": "pass",
+        "sysmanaged": "fail",
+        "dpd": "fail"
+      },
+      "note": "download_error on some layers"
+    },
+    "frdm_mcxa344": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "built",
+        "device": "built",
+        "runtime": "built",
+        "system": "built",
+        "sysmanaged": "built",
+        "dpd": "built"
+      },
+      "note": "no online station in the run token pool"
+    },
+    "frdm_mcxa346": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "built",
+        "device": "built",
+        "runtime": "built",
+        "system": "built",
+        "sysmanaged": "built",
+        "dpd": "built"
+      },
+      "note": "no online station in the run token pool"
+    },
+    "frdm_mcxa366": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "built",
+        "device": "built",
+        "runtime": "built",
+        "system": "built",
+        "sysmanaged": "built",
+        "dpd": "built"
+      },
+      "note": "no online station in the run token pool"
+    },
+    "frdm_mcxa577": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "blocked",
+        "device": "pass",
+        "runtime": "pass",
+        "system": "pass",
+        "sysmanaged": "fail",
+        "dpd": "fail"
+      },
+      "note": "download_error on some layers"
+    },
+    "frdm_mcxn236": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "pass",
+        "device": "pass",
+        "runtime": "pass",
+        "system": "pass",
+        "sysmanaged": "pass",
+        "dpd": "pass"
+      }
+    },
+    "frdm_mcxn947/mcxn947/cpu0": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "pass",
+        "device": "blocked",
+        "runtime": "pass",
+        "system": "pass",
+        "sysmanaged": "pass",
+        "dpd": "pass"
+      },
+      "note": "device: the board ran, twister died printing its summary to a cp1252 console"
+    },
+    "mcx_n5xx_evk/mcxn547/cpu0": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "built",
+        "device": "built",
+        "runtime": "built",
+        "system": "built",
+        "sysmanaged": "built",
+        "dpd": "built"
+      },
+      "note": "no online station in the run token pool"
+    },
+    "mcx_n9xx_evk/mcxn947/cpu0": {
+      "job": "2325402",
+      "layers": {
+        "baseline": "built",
+        "device": "built",
+        "runtime": "built",
+        "system": "built",
+        "sysmanaged": "built",
+        "dpd": "built"
+      },
+      "note": "no online station in the run token pool"
+    }
+  }
+}
