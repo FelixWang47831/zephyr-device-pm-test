@@ -9,18 +9,20 @@
  *
  * One file for two layers, because the sequence is identical and only the state
  * being entered differs -- and that difference is what separates the two claims. In
- * sysmanaged the sweep's SUSPEND and RESUME are all that happen, so re-opening the
- * clock gate and restarting the counter is enough. In dpd the CORE domain is power
- * gated: the whole register block comes back at its reset value, the SYSCON clock
- * gate with it, and nothing re-runs driver init -- so TURN_ON has to rebuild the
- * armed alarm from the image the suspend kept and RESUME has to restart it. dpd is
- * the only layer that can catch a driver with no restore path.
+ * sysmanaged the sweep's SUSPEND and RESUME are all that happen, so the block keeps
+ * its power: re-opening the clock gate hands back the alarm the consumer armed, and
+ * it fires on its own. In dpd the CORE domain is power gated: the whole register
+ * block comes back at its reset value, the SYSCON clock gate with it, and nothing
+ * re-runs driver init -- so TURN_ON has to rebuild the block from the devicetree and
+ * re-connect the interrupt, while the run the consumer had is gone and arming again
+ * is theirs. dpd is the only layer that can catch a driver with no restore path.
  *
  * What is asserted after the transition is deliberately behavioural as well as
- * register-level: that the counter counts and the alarm the consumer armed still
- * fires. A CTIMER's functional clock is selected by the board rather than by this
- * driver, so a register image that came back perfectly while the clock mux did not
- * would look restored and still not count.
+ * register-level: that the counter counts and that an alarm fires -- the one the
+ * consumer armed where power was kept, a freshly armed one where it was not. A
+ * CTIMER's functional clock is selected by the board rather than by this driver, so
+ * a register image that came back perfectly while the clock mux did not would look
+ * restored and still not count.
  */
 
 #include <zephyr/pm/device.h>
@@ -85,13 +87,41 @@ ZTEST(ctimer_pm, test_sweep_across_transition)
 			zassert_true(gate_after,
 				     "%s: the clock gate was not re-opened across the "
 				     "transition", c->dev->name);
+#if defined(CONFIG_PM_TEST_LAYER_DPD)
+			zassert_false(ctimer_image_equal(&after, &armed),
+				      "%s: the armed alarm came back across %s, so the block "
+				      "kept its power and this layer is not testing what it "
+				      "claims", c->dev->name, PM_TEST_TRANSITION_NAME);
+#else
 			zassert_true(ctimer_image_equal(&after, &armed),
 				     "%s: the armed alarm did not survive the transition: "
 				     "TCR=0x%08x MCR=0x%08x MR=0x%08x, want 0x%08x/0x%08x/"
 				     "0x%08x", c->dev->name, after.tcr, after.mcr, after.mr,
 				     armed.tcr, armed.mcr, armed.mr);
+#endif
 		}
 
+#if defined(CONFIG_PM_TEST_LAYER_DPD)
+		/*
+		 * Power was cut, so the counter is back at reset and nothing is armed.
+		 * What has to hold is that the block works again: starting and arming
+		 * from scratch cannot succeed unless TURN_ON rebuilt the block and
+		 * re-connected the interrupt, which is the restore path this layer exists
+		 * to check.
+		 */
+		zassert_false(ctimer_running(c),
+			      "%s: the counter is running after %s without being started",
+			      c->dev->name, PM_TEST_TRANSITION_NAME);
+		zassert_ok(ctimer_start_and_verify(c),
+			   "%s: the counter does not start after %s", c->dev->name,
+			   PM_TEST_TRANSITION_NAME);
+		zassert_ok(ctimer_arm_alarm(c, 200U),
+			   "%s: the alarm cannot be armed after %s", c->dev->name,
+			   PM_TEST_TRANSITION_NAME);
+		zassert_true(ctimer_alarm_wait(c, 1000U),
+			     "%s: an alarm armed after %s did not fire", c->dev->name,
+			     PM_TEST_TRANSITION_NAME);
+#else
 		/* And the block has to work, not just read back right. */
 		zassert_true(ctimer_advances(c),
 			     "%s: the counter is not counting after the transition",
@@ -99,6 +129,7 @@ ZTEST(ctimer_pm, test_sweep_across_transition)
 		zassert_true(ctimer_alarm_wait(c, 1000U),
 			     "%s: the alarm the consumer armed did not fire after the "
 			     "transition", c->dev->name);
+#endif
 
 		(void)ctimer_cancel_alarm(c);
 		(void)ctimer_stop(c);

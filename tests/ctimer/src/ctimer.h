@@ -17,12 +17,24 @@
  * identical from the counter API.
  *
  * The second is the register image of an armed alarm: MR[0] holds the match value
- * and MCR its interrupt enable, and nothing else in the block carries them. This
- * is what tells a restored CTIMER from one that came back from reset -- and it has
- * to be the run-time image rather than the devicetree one, because on every board
- * here prescale, mode and input are all 0, which is also what a reset leaves. A
- * case that compared the devicetree configuration against reset would compare zero
- * against zero and pass without the driver restoring anything.
+ * and MCR its interrupt enable, and nothing else in the block carries them. That
+ * makes it the observable for a suspend, which keeps the block powered and so has
+ * to hand the armed alarm back untouched.
+ *
+ * It is deliberately not the observable for a power cycle. The counter API gives
+ * the consumer stop() and cancel_alarm(), and a count value that no restore can
+ * make meaningful again, so re-arming after power was lost belongs to the consumer
+ * and a driver that did it for them would be fighting its own API. Nor is the
+ * devicetree image an alternative: on every board here prescale, mode and input are
+ * all 0, which is also what a reset leaves, so comparing the configuration against
+ * reset would compare zero against zero and pass without the driver rebuilding
+ * anything.
+ *
+ * What is asserted across a power cycle is therefore behavioural: an alarm armed
+ * fresh after the round trip has to fire. That cannot pass without the driver
+ * having re-run init and re-connected the interrupt, so it catches a missing
+ * restore path the way the register image would have, without asking the driver for
+ * something the API says is not its job.
  *
  * A counter that advances is the third thing, and it is the control: it is what
  * makes "the gate is open" mean the peripheral works rather than that a bit is set.

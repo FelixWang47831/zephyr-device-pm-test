@@ -20,6 +20,12 @@
  * test asserts that split as far as it is observable: a CTIMER register answers only
  * while the block is clocked, so the image cannot be read between TURN_ON and RESUME,
  * and what is checked there is that TURN_ON left the gate closed.
+ *
+ * The two differ in what they owe the consumer, and that is the point of having both.
+ * A suspend keeps the block powered, so the alarm the consumer armed is still there
+ * afterwards and fires on its own. A power cycle does not, so what comes back is a
+ * stopped counter with nothing armed, and arming again is the consumer's -- see
+ * src/ctimer.h for why the counter API leaves it there.
  */
 
 #include <zephyr/pm/device.h>
@@ -146,8 +152,8 @@ ZTEST(ctimer_pm, test_device_turn_on_rebuilds_the_register_block)
 		zassert_ok(resume_rc, "%s: RESUME rejected (%d)", c->dev->name, resume_rc);
 		zassert_pm_state(c->dev, PM_DEVICE_STATE_ACTIVE);
 
-		/* Before anything else: a clobber that did not take would make the restore
-		 * assertion below pass without the driver having rebuilt a thing.
+		/* Before anything else: a clobber that did not take would make the claims
+		 * below answerable without the block ever having been disturbed.
 		 */
 		zassert_false(ctimer_image_equal(&clobbered, &armed),
 			      "%s: the clobber did not take, so this test proves nothing",
@@ -156,20 +162,38 @@ ZTEST(ctimer_pm, test_device_turn_on_rebuilds_the_register_block)
 		/*
 		 * TURN_ON returns with the core about to record the device as suspended,
 		 * so a block left clocked would be a block running behind a PM state that
-		 * says it is not. The image it rebuilds has to be the run-time one and
-		 * not just a devicetree configuration that is indistinguishable from
-		 * reset, which is what the clobber above makes answerable.
+		 * says it is not.
 		 */
 		zassert_false(gate_after_turn_on, "%s: TURN_ON opened the clock gate",
 			      c->dev->name);
 		zassert_true(ctimer_gate_is_open(c), "%s: RESUME left the clock gate closed",
 			     c->dev->name);
-		zassert_true(ctimer_image_equal(&after_resume, &armed),
-			     "%s: the round trip left TCR=0x%08x MCR=0x%08x MR=0x%08x, want "
-			     "0x%08x/0x%08x/0x%08x", c->dev->name, after_resume.tcr,
-			     after_resume.mcr, after_resume.mr, armed.tcr, armed.mcr, armed.mr);
+
+		/*
+		 * What the round trip owes the consumer is a device they can use again,
+		 * not the run they had before it: the counter comes back stopped and
+		 * nothing is armed, because a count value and an alarm measured against it
+		 * did not survive and restoring them would be restoring a lie.
+		 */
+		zassert_false(ctimer_running(c),
+			      "%s: the round trip left the counter running, TCR=0x%08x",
+			      c->dev->name, after_resume.tcr);
+		zassert_false(ctimer_alarm_fired(c),
+			      "%s: an alarm fired after the round trip without being armed",
+			      c->dev->name);
+
+		/*
+		 * And usable means usable: arming again has to work. This is what carries
+		 * the restore claim, because an alarm cannot fire unless TURN_ON re-ran
+		 * init on a block that came back clobbered and re-connected its interrupt.
+		 */
+		zassert_ok(ctimer_start_and_verify(c), "%s: the counter does not start after "
+			   "the round trip", c->dev->name);
+		zassert_ok(ctimer_arm_alarm(c, 50U),
+			   "%s: the alarm cannot be armed after the round trip", c->dev->name);
 		zassert_true(ctimer_alarm_wait(c, 500U),
-			     "%s: the restored alarm did not fire", c->dev->name);
+			     "%s: an alarm armed after the round trip did not fire",
+			     c->dev->name);
 
 		(void)ctimer_cancel_alarm(c);
 		(void)ctimer_stop(c);
