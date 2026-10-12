@@ -1,0 +1,64 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: Apache-2.0
+#
+# One scenario per layer, and the layer is named once, as a snippet. Per-board
+# opamp wiring lives in boards/<board_target>.overlay and is picked up
+# automatically.
+#
+# platform_allow covers the two gain-capable boards (nxp,opamp: frdm_mcxa156,
+# frdm_mcxn947) and the three fast-variant boards (nxp,opamp-fast: frdm_mcxa344,
+# frdm_mcxa346, frdm_mcxa366). lpcxpresso55s36 also wires an opamp but its SoC
+# dtsi (LPC55S3x) has no PM fix yet -- tracked as a follow-up, not in scope here.
+#
+# mcxa-suspend-to-idle-never-wakes in docs/findings.md means sysmanaged and dpd
+# are expected to block on all four MCXA boards; frdm_mcxn947 is the board that
+# actually completes those two layers and proves the RESUME gain-replay fix
+# across a real power cycle.
+
+common:
+  tags:
+    - pm
+    - opamp
+    - drivers
+  harness: ztest
+  platform_allow:
+    # MCXN -- gain-capable (nxp,opamp)
+    - frdm_mcxn947/mcxn947/cpu0
+    - frdm_mcxn947/mcxn947/cpu0/qspi
+    # MCXA -- gain-capable (nxp,opamp)
+    - frdm_mcxa156
+    # MCXA -- fast variant (nxp,opamp-fast)
+    - frdm_mcxa344
+    - frdm_mcxa346
+    - frdm_mcxa366
+
+tests:
+  # The control. No snippet, so lib/pm_test's layer choice falls back to baseline.
+  drivers.pm.opamp.baseline: {}
+
+  drivers.pm.opamp.device:
+    required_snippets:
+      - pm-device
+
+  drivers.pm.opamp.runtime:
+    required_snippets:
+      - pm-runtime
+
+  # Which states cut the bias is a property of this peripheral, so the state list
+  # is the one thing a layer snippet cannot supply. Stacked with
+  # EXTRA_DTC_OVERLAY_FILE so boards/<board_target>.overlay still applies.
+  drivers.pm.opamp.system:
+    required_snippets:
+      - pm-system
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=constraints.overlay
+
+  drivers.pm.opamp.sysmanaged:
+    required_snippets:
+      - pm-sysmanaged
+
+  # One scenario for both SoC families: the snippet applies the MCXN retained-SRAM
+  # constraint from the board target itself.
+  drivers.pm.opamp.dpd:
+    required_snippets:
+      - pm-dpd

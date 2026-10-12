@@ -1,0 +1,26 @@
+/*
+ * Copyright 2026 NXP
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * OPAMP setup for the device-PM test on FRDM-MCXA366.
+ *
+ * The board already wires &opamp0 with status "okay" and a pinctrl state; this
+ * overlay only adds what the test needs on top of that.
+ *
+ * opamp0 is the fast variant (nxp,opamp-fast): bias-current and
+ * compensation-capcitor both default to 0, so mcux_opamp_fast_configure() would
+ * write an all-zero OPAMP_CTRL configuration region. src/test_device.c's
+ * "clobber actually changed something" check needs a nonzero configuration to
+ * clobber, so both are forced to a nonzero value here.
+ */
+
+/ {
+	aliases {
+		test-opamp = &opamp0;
+	};
+};
+
+&opamp0 {
+	bias-current = <1>;
+	compensation-capcitor = <1>;
+};

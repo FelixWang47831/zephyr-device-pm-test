@@ -1,0 +1,35 @@
+/*
+ * Copyright 2026 NXP
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * OPAMP setup for the device-PM test on FRDM-MCXN947 (cpu0, XIP from QSPI flash).
+ *
+ * The board already wires &opamp0 with status "okay" and a pinctrl state; this
+ * overlay only adds what the test needs on top of that.
+ *
+ * opamp0 is a gain-capable nxp,opamp. Its SoC dtsi defaults functional-mode to
+ * "follower", and mcux_opamp_apply_gain()'s FOLLOWER case ignores the gain index
+ * entirely -- a gain-restore assertion would pass without set_gain() having
+ * written anything gain-index-dependent. Switching to non_inverting makes the
+ * written NGAIN/PGAIN fields actually depend on the requested gain, and setting
+ * non-inverting-reference gives mcux_opamp_configure() a nonzero PREF value
+ * instead of the UINT8_MAX default, so the "clobber actually changed something"
+ * check in src/test_device.c has a nonzero devicetree configuration to clobber.
+ *
+ * This is also the only board in scope that completes the dpd layer --
+ * mcxa-suspend-to-idle-never-wakes in docs/findings.md means dpd is expected to
+ * block on every MCXA board here -- so this overlay is what proves the RESUME
+ * gain-replay fix across a real power cycle, not just a synthetic TURN_ON/RESUME
+ * pair under the device layer.
+ */
+
+/ {
+	aliases {
+		test-opamp = &opamp0;
+	};
+};
+
+&opamp0 {
+	functional-mode = "non_inverting";
+	non-inverting-reference = "Input1";
+};

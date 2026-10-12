@@ -1,0 +1,23 @@
+/*
+ * Copyright 2026 NXP
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * States that cut the opamp's analog bias and therefore its output, cited against
+ * each family's reference manual:
+ *
+ *   MCXA (frdm_mcxa156):           MCXAP100M96FS6RM Rev. 7, section 23.5, p.829
+ *   MCXA (frdm_mcxa344):           MCXAP100M180F40RM Rev. 1, section 24.5, p.826
+ *   MCXA (frdm_mcxa346/366):       MCXAP144M180FS6RM Rev. 1, section 24.5, p.973
+ *   MCXN (frdm_mcxn947):           MCXNX4XRM Rev. 6_RC2, Table 336, p.1323
+ *
+ * All four agree: the analog core is Optional/On-Off (left to software) in Sleep
+ * and Deep Sleep, and only forced Off in Power Down and Deep Power Down -- the SoC
+ * dtsi for every board here declares the same two states on &opamp0, so this just
+ * restates that list rather than adding to it.
+ */
+
+&opamp0 {
+	zephyr,disabling-power-states = <&powerdown &deeppowerdown>;
+};

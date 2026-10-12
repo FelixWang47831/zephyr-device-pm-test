@@ -11,6 +11,3 @@ __pycache__/
 # Editors
 *.swp
 .DS_Store
-
-# Local agent workflow: kept on disk, deliberately not published.
-skills/
