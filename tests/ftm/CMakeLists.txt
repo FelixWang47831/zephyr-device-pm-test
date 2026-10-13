@@ -13,3 +13,7 @@ project(ftm_device_pm)
 
 # The suite, the register view, and the control test that every layer runs.
 target_sources(app PRIVATE src/main.c src/ftm.c src/test_control.c)
+
+# One file per layer. A layer file is the only place that layer claims live, so a
+# build for a layer contains no code belonging to any other.
+target_sources_ifdef(CONFIG_PM_TEST_LAYER_DEVICE     app PRIVATE src/test_device.c)

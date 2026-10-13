@@ -16,3 +16,7 @@ common:
 tests:
   # The control. No snippet, so the lib/pm_test layer choice falls back to baseline.
   drivers.pm.ftm.baseline: {}
+
+  drivers.pm.ftm.device:
+    required_snippets:
+      - pm-device
