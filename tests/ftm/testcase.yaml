@@ -24,3 +24,7 @@ tests:
   drivers.pm.ftm.runtime:
     required_snippets:
       - pm-runtime
+
+  drivers.pm.ftm.system:
+    required_snippets:
+      - pm-system
