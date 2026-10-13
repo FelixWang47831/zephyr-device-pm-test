@@ -1,0 +1,30 @@
+{
+ "run": "20261013-ftm-local",
+ "date": "2026-10-13",
+ "case": "ftm",
+ "where": "local",
+ "zephyr": "v4.5.0-rc1-352-g8f721722eed9",
+ "harness": "0e63141",
+ "targets": {
+  "frdm_ke17z": {
+   "note": "FTM2 channel 0. Flashed and captured by twister through the board target's default linkserver runner on COM45; 12 of 12 test cases passed in 414.36 s. Run in a separate twister invocation from frdm_mcxe247 because only one board was attached at a time; nothing in the tree changed between them.",
+   "layers": {
+    "baseline": "pass",
+    "device": "pass",
+    "runtime": "pass",
+    "system": "pass",
+    "sysmanaged": "pass"
+   }
+  },
+  "frdm_mcxe247": {
+   "note": "FTM0 channel 0, promoted to nxp,ftm-pwm by the case boards/ overlay. Flashed by twister through the jlink runner (--west-runner jlink): the board target's default linkserver runner answers \"No probes detected\" on this board, whose onboard debugger carries J-Link firmware. Console is the J-Link CDC UART on COM30; 12 of 12 test cases passed in 582.58 s.",
+   "layers": {
+    "baseline": "pass",
+    "device": "pass",
+    "runtime": "pass",
+    "system": "pass",
+    "sysmanaged": "pass"
+   }
+  }
+ }
+}
