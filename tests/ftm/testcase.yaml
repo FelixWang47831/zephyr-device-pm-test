@@ -20,3 +20,7 @@ tests:
   drivers.pm.ftm.device:
     required_snippets:
       - pm-device
+
+  drivers.pm.ftm.runtime:
+    required_snippets:
+      - pm-runtime

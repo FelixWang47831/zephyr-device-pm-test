@@ -17,3 +17,4 @@ target_sources(app PRIVATE src/main.c src/ftm.c src/test_control.c)
 # One file per layer. A layer file is the only place that layer claims live, so a
 # build for a layer contains no code belonging to any other.
 target_sources_ifdef(CONFIG_PM_TEST_LAYER_DEVICE     app PRIVATE src/test_device.c)
+target_sources_ifdef(CONFIG_PM_TEST_LAYER_RUNTIME    app PRIVATE src/test_runtime.c)
