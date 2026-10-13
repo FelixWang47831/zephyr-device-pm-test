@@ -6,17 +6,23 @@ Reference target: `frdm_mcxn947/mcxn947/cpu0` (NXP FRDM-MCXN947).
 | --- | --- |
 | MCXN | `frdm_mcxn947/mcxn947/cpu0`, `frdm_mcxn947/mcxn947/cpu0/qspi`, `frdm_mcxn236`, `mcx_n9xx_evk/mcxn947/cpu0`, `mcx_n9xx_evk/mcxn947/cpu0/qspi`, `mcx_n5xx_evk/mcxn547/cpu0` |
 | MCXA | `frdm_mcxa153`, `frdm_mcxa156`, `frdm_mcxa266`, `frdm_mcxa344`, `frdm_mcxa346`, `frdm_mcxa366`, `frdm_mcxa577` |
+| KE1xZ | `frdm_ke17z` |
+| MCXE | `frdm_mcxe247` |
 
 Which case covers which target is declared in that case's `testcase.yaml` (`platform_allow`), and
 that declaration is authoritative — this table is the human summary of it.
 
-- **lpadc, lpcmp, port** cover every target above.
+- **lpadc, lpcmp, port** cover every MCXN and MCXA target above.
 - **lpdac** covers 10 targets: every MCXN one except `frdm_mcxn236`, and every MCXA one except
   `frdm_mcxa153` and `frdm_mcxa344`. Those three SoCs have no `nxp,lpdac` node at all. (`dac2` on
   MCXN947 is an `nxp,hpdac` and a different driver.)
 - **vref** covers the MCXN targets only: no MCXA SoC has an `nxp,vref` node.
+- **ftm** covers the KE1xZ and MCXE targets only, and nothing else above: no MCXN or MCXA SoC has an
+  FTM at all. It is also the one case that does not run all six layers — see
+  [../tests/ftm/README.md](../tests/ftm/README.md) for why `dpd` cannot exist on an FTM part and why
+  `sysmanaged` runs on both.
 
-Every one of these SoCs `select HAS_PM` and declares the same four power states (`sleep`,
+The MCXN and MCXA SoCs all `select HAS_PM` and declare the same four power states (`sleep`,
 `deepsleep`, `powerdown`, `deeppowerdown`), which is why the layer snippets are family-wide and only
 the peripheral wiring is per board.
 

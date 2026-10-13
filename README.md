@@ -10,6 +10,7 @@ transition behaves. A failing layer is a finding, not a broken harness.
 | Case | IP | Driver under test |
 | --- | --- | --- |
 | [tests/ctimer](tests/ctimer) | CTIMER | `drivers/counter/counter_mcux_ctimer.c` |
+| [tests/ftm](tests/ftm) | FTM | `drivers/pwm/pwm_mcux_ftm.c` |
 | [tests/lpadc](tests/lpadc) | LPADC | `drivers/adc/adc_mcux_lpadc.c` |
 | [tests/lpcmp](tests/lpcmp) | LPCMP | `drivers/comparator/comparator_nxp_lpcmp.c` |
 | [tests/lpdac](tests/lpdac) | LPDAC | `drivers/dac/dac_mcux_lpdac.c` |
