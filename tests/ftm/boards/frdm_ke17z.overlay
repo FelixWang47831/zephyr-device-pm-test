@@ -1,0 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: Copyright 2026 NXP
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ */
+
+/*
+ * The ke1xz lptmr0 clocks the prescaler from a 128 kHz source and bypasses it,
+ * so the 16-bit counter wraps at 0.512 s -- less than the 2 s the sysmanaged
+ * layer forces. Divide by 8 instead: 16 kHz puts the range at 4.096 s, and one
+ * tick at 62.5 us is still finer than the 140 us exit latency the node declares,
+ * so the forced transition is timed by a single alarm rather than chopped into
+ * re-armed pieces.
+ */
+&lptmr0 {
+	/delete-property/ prescale-glitch-filter-bypass;
+	prescale-glitch-filter = <2>;
+};

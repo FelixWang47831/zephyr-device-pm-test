@@ -2,6 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # One scenario per layer, and the layer is named once, as a snippet.
+#
+# Five layers, not six. No SoC with an FTM declares a suspend-to-ram power state,
+# so pm-dpd cannot be configured at all -- its overlay enables &deeppowerdown,
+# which is not a label that exists here. docs/pm-layers.md still defines six; this
+# case covers the five that the silicon can reach. What dpd would have proved is
+# carried by sysmanaged instead: this driver gates its clock from SUSPEND, so the
+# register image is gone after every suspend and the resume has to rebuild it.
 
 common:
   tags:
@@ -28,3 +35,14 @@ tests:
   drivers.pm.ftm.system:
     required_snippets:
       - pm-system
+
+  # Both targets. frdm_ke17z chooses zephyr,system-timer-companion = &lptmr0 in
+  # its board devicetree; frdm_mcxe247 gets the same from boards/, because MCXE24x
+  # leaves its lptmr0 disabled and unmarked. Without a companion counter the
+  # forced Deep Sleep has nothing to end it.
+  #
+  # frdm_mcxe247 returns in 2.03 s, but needs boards/frdm_mcxe247.conf to survive
+  # the sweep at all, see mcxe247-idle-stack-too-small-for-pm-sweep.
+  drivers.pm.ftm.sysmanaged:
+    required_snippets:
+      - pm-sysmanaged
