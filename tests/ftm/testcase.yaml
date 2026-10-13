@@ -1,0 +1,18 @@
+# Copyright 2026 NXP
+# SPDX-License-Identifier: Apache-2.0
+#
+# One scenario per layer, and the layer is named once, as a snippet.
+
+common:
+  tags:
+    - pm
+    - pwm
+    - drivers
+  harness: ztest
+  platform_allow:
+    - frdm_ke17z
+    - frdm_mcxe247
+
+tests:
+  # The control. No snippet, so the lib/pm_test layer choice falls back to baseline.
+  drivers.pm.ftm.baseline: {}
